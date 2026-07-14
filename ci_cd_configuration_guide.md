@@ -125,3 +125,19 @@ When running `agy` programmatically or inside workflows, use the following optio
 Before pushing your changes, you can validate the code and formatting locally using:
 * **Run Tests**: `npm test` (uses [test/math.test.js](file:///workspaces/CI_CD_Demo/test/math.test.js))
 * **Run Linter**: `npm run lint` (uses Node's native compiler `--check` to verify syntax)
+
+---
+
+## 5. How Tests and Linting Work Under the Hood
+
+### A. Test Execution & Discovery
+When you run `npm test`, it calls Node's native test runner (`node --test test/*.test.js`):
+1. **Runner Invocation:** Node.js executes the built-in test runner without needing third-party testing frameworks.
+2. **File Discovery:** The glob pattern `test/*.test.js` matches and runs all test suites located in the `test/` directory.
+3. **Execution:** Assertions defined using `node:assert` are evaluated, returning success (`✔`) or descriptive failure logs.
+
+### B. Linter & Syntax Checking
+When you run `npm run lint`, it runs `node --check src/*.js test/*.js`:
+1. **Compilation Check:** The `--check` flag compile-checks the JavaScript files to catch syntax errors without executing the code.
+2. **Path Discovery:** It checks all `.js` files in `src/` and `test/` folders.
+
