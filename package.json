@@ -1,0 +1,13 @@
+{
+  "name": "ci-cd-demo",
+  "version": "1.0.0",
+  "description": "Demo repository for CI/CD with Antigravity agy CLI integration",
+  "main": "src/math.js",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "lint": "node --check src/*.js test/*.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
