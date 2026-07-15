@@ -38,8 +38,8 @@ jobs:
     name: Antigravity Code Audit
     needs: build-and-test
     runs-on: ubuntu-latest
-    # Only run if ANTIGRAVITY_TOKEN secret is configured
-    if: "${{ secrets.ANTIGRAVITY_TOKEN != '' }}"
+    env:
+      ANTIGRAVITY_TOKEN: ${{ secrets.ANTIGRAVITY_TOKEN }}
     
     steps:
       # Checkout the repository code to the runner
@@ -48,6 +48,7 @@ jobs:
 
       # Download, install, and add the Antigravity CLI ('agy') to the runner's PATH
       - name: Install Antigravity CLI
+        if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
         run: |
           # Fetch and execute the official installation script
           curl -fsSL https://antigravity.google/cli/install.sh | bash
@@ -56,8 +57,7 @@ jobs:
 
       # Run a headless AI audit using the 'agy' CLI and save it to audit_report.md
       - name: Run Automated Audit
-        env:
-          ANTIGRAVITY_TOKEN: ${{ secrets.ANTIGRAVITY_TOKEN }}
+        if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
         run: |
           # Initialize the markdown file with a header
           echo "### Antigravity AI Code Audit Report" > audit_report.md
@@ -70,6 +70,7 @@ jobs:
 
       # Upload the generated report file as a GitHub Actions build artifact
       - name: Upload Audit Report
+        if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: antigravity-audit-report
