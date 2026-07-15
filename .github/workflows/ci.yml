@@ -55,6 +55,14 @@ jobs:
           # Add the installation path to GITHUB_PATH to make 'agy' available in subsequent steps
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      # Setup local credential file for the CLI using the repository secret
+      - name: Configure Credentials
+        if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
+        run: |
+          mkdir -p $HOME/.gemini/antigravity-cli
+          echo "{\"token\":{\"access_token\":\"\",\"token_type\":\"Bearer\",\"refresh_token\":\"${{ env.ANTIGRAVITY_TOKEN }}\",\"expiry\":\"0001-01-01T00:00:00Z\"},\"auth_method\":\"consumer\"}" > $HOME/.gemini/antigravity-cli/antigravity-oauth-token
+          chmod 600 $HOME/.gemini/antigravity-cli/antigravity-oauth-token
+
       # Run a headless AI audit using the 'agy' CLI and save it to audit_report.md
       - name: Run Automated Audit
         if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
