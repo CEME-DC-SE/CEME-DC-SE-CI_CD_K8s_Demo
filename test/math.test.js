@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { add, subtract, multiply, divide } = require('../src/math.js');
+const { add, subtract, multiply, divide, power } = require('../src/math.js');
 
 test('add() adds two numbers correctly', () => {
   assert.strictEqual(add(2, 3), 5);
@@ -22,3 +22,9 @@ test('divide() divides two numbers correctly', () => {
 test('divide() throws when dividing by zero', () => {
   assert.throws(() => divide(10, 0), /Cannot divide by zero/);
 });
+
+test('power() calculates the power of a base to an exponent', () => {
+  assert.strictEqual(power(2, 3), 8);
+  assert.strictEqual(power(5, 0), 1);
+});
+
