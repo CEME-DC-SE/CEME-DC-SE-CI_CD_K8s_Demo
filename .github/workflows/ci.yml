@@ -47,6 +47,9 @@ jobs:
       # Checkout the repository code to the runner
       - name: Checkout Code
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+
 
       # Download, install, and add the Antigravity CLI ('agy') to the runner's PATH
       - name: Install Antigravity CLI
@@ -86,7 +89,8 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add audit_report.md
           git diff-index --quiet HEAD || git commit -m "docs: update Antigravity AI Code Audit Report [skip ci]"
-          git push
+          git push origin HEAD:refs/heads/${{ github.event.pull_request.head.ref || github.ref_name }}
+
 
       # Upload the generated report file as a GitHub Actions build artifact
       - name: Upload Audit Report
