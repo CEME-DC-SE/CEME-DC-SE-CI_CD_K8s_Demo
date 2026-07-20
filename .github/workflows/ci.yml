@@ -80,7 +80,8 @@ jobs:
           # Add a blank spacing line
           echo "" >> audit_report.md
           # Run non-interactive agent audit print mode to output markdown report
-          agy --print "Perform a security, quality, and structure audit on the repository. Highlight potential issues, code quality, and adherence to AGENTS.md instructions. Format the output in Markdown." --dangerously-skip-permissions >> audit_report.md
+          agy --print "Perform a code quality, architecture, and structure review on the repository. Highlight code cleanliness, test coverage, and adherence to AGENTS.md instructions. Format the output in Markdown." --dangerously-skip-permissions >> audit_report.md
+
 
       # Commit and push the generated audit report back to the repository
       - name: Commit and Push Audit Report
