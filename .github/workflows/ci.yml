@@ -65,7 +65,9 @@ jobs:
         if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
         run: |
           mkdir -p $HOME/.gemini/antigravity-cli
-          echo "{\"token\":{\"access_token\":\"\",\"token_type\":\"Bearer\",\"refresh_token\":\"${{ env.ANTIGRAVITY_TOKEN }}\",\"expiry\":\"0001-01-01T00:00:00Z\"},\"auth_method\":\"consumer\"}" > $HOME/.gemini/antigravity-cli/antigravity-oauth-token
+          cat << 'EOF' > $HOME/.gemini/antigravity-cli/antigravity-oauth-token
+          {"token":{"access_token":"","token_type":"Bearer","refresh_token":"${{ env.ANTIGRAVITY_TOKEN }}","expiry":"0001-01-01T00:00:00Z"},"auth_method":"consumer"}
+EOF
           chmod 600 $HOME/.gemini/antigravity-cli/antigravity-oauth-token
 
       # Run a headless AI audit using the 'agy' CLI and save it to audit_report.md
@@ -84,12 +86,15 @@ jobs:
       # Commit and push the generated audit report back to the repository
       - name: Commit and Push Audit Report
         if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
+        env:
+          TARGET_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add audit_report.md
           git diff-index --quiet HEAD || git commit -m "docs: update Antigravity AI Code Audit Report [skip ci]"
-          git push origin HEAD:refs/heads/${{ github.event.pull_request.head.ref || github.ref_name }}
+          git push origin HEAD:refs/heads/"$TARGET_REF"
+
 
 
       # Upload the generated report file as a GitHub Actions build artifact

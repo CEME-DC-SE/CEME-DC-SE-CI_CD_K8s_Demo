@@ -26,5 +26,19 @@ test('divide() throws when dividing by zero', () => {
 test('power() calculates the power of a base to an exponent', () => {
   assert.strictEqual(power(2, 3), 8);
   assert.strictEqual(power(5, 0), 1);
+  assert.strictEqual(power(2, -2), 0.25);
 });
+
+test('math functions throw TypeError for non-numeric arguments', () => {
+  assert.throws(() => add("5", 5), /Arguments must be valid numbers/);
+  assert.throws(() => subtract(10, "2"), /Arguments must be valid numbers/);
+  assert.throws(() => multiply(null, 4), /Arguments must be valid numbers/);
+  assert.throws(() => divide(10, undefined), /Arguments must be valid numbers/);
+  assert.throws(() => power(NaN, 2), /Arguments must be valid numbers/);
+});
+
+test('divide() throws when dividing by negative zero', () => {
+  assert.throws(() => divide(10, -0), /Cannot divide by zero/);
+});
+
 
