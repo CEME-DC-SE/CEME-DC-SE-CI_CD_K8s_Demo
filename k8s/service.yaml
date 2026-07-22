@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: calculator-service
+  namespace: ci-cd-demo
+  labels:
+    app: calculator
+spec:
+  type: ClusterIP
+  selector:
+    app: calculator
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+    name: http

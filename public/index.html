@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CI_CD_Demo - Continuous Delivery Web Calculator</title>
+  <title>CI_CD_K8s_Demo - Web Calculator & Live K8s Cluster Dashboard</title>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,28 +13,28 @@
   <div class="app-container">
     <header class="app-header">
       <div class="logo-container">
-        <span class="logo-icon">🚀</span>
+        <span class="logo-icon">☸️</span>
         <div>
-          <h1>CI/CD Demo Calculator</h1>
-          <p class="subtitle">Continuous Delivery Pipeline • GitHub Pages</p>
+          <h1>K8s Web Calculator & Cluster Dashboard</h1>
+          <p class="subtitle">Kubernetes Load Balanced Microservice • Docker Containerized</p>
         </div>
       </div>
       <div class="status-badge">
         <span class="pulse-dot"></span>
-        <span id="pipeline-status">CD Pipeline Active</span>
+        <span id="pipeline-status">K8s Cluster 3/3 Healthy</span>
       </div>
     </header>
 
     <div class="live-event-banner">
-      <span class="event-sparkle">✨</span>
-      <span>Live Pipeline Event Verified • Deployment v1.1.0</span>
+      <span class="event-sparkle">🚀</span>
+      <span>Live Kubernetes Deployment • Namespace: <code>ci-cd-demo</code> • Service: <code>ClusterIP:80</code></span>
     </div>
 
     <main class="main-content">
       <!-- Calculator Card -->
       <section class="card calculator-card">
         <h2>Interactive Math Utility Engine</h2>
-        <p class="card-desc">Powered by <code>src/math.js</code> module</p>
+        <p class="card-desc">Calculations executed via Kubernetes Pod Load Balancer</p>
         
         <div class="input-group">
           <div class="field">
@@ -61,32 +61,92 @@
         </div>
       </section>
 
-      <!-- System Architecture Info Card -->
+      <!-- Live Kubernetes Cluster Topology & Visualizer Dashboard -->
+      <section class="card cluster-card">
+        <div class="cluster-card-header">
+          <h2>⚡ Live Kubernetes Cluster Topology</h2>
+          <span class="badge k8s-badge" id="k8s-mode-badge">Cluster Mode: Active</span>
+        </div>
+        <p class="card-desc">Real-time pod replica visualization & load balancing activity behind the web calculator</p>
+
+        <!-- Pod Replicas Topology Grid -->
+        <div class="pods-grid" id="pods-grid">
+          <div class="pod-card" id="pod-card-1" data-pod-id="pod-1">
+            <div class="pod-header">
+              <span class="pod-status-dot green"></span>
+              <span class="pod-title" id="pod-name-1">calculator-pod-1</span>
+            </div>
+            <div class="pod-body">
+              <p><strong>Host Node:</strong> <span id="pod-node-1" class="mono">node-01</span></p>
+              <p><strong>Pod IP:</strong> <span id="pod-ip-1" class="mono">10.244.0.5</span></p>
+              <p><strong>Status:</strong> <span class="badge badge-success">Running</span></p>
+            </div>
+            <div class="pod-traffic-indicator" id="pod-traffic-1">Last Served</div>
+          </div>
+
+          <div class="pod-card" id="pod-card-2" data-pod-id="pod-2">
+            <div class="pod-header">
+              <span class="pod-status-dot green"></span>
+              <span class="pod-title" id="pod-name-2">calculator-pod-2</span>
+            </div>
+            <div class="pod-body">
+              <p><strong>Host Node:</strong> <span id="pod-node-2" class="mono">node-02</span></p>
+              <p><strong>Pod IP:</strong> <span id="pod-ip-2" class="mono">10.244.0.6</span></p>
+              <p><strong>Status:</strong> <span class="badge badge-success">Running</span></p>
+            </div>
+            <div class="pod-traffic-indicator" id="pod-traffic-2">Last Served</div>
+          </div>
+
+          <div class="pod-card" id="pod-card-3" data-pod-id="pod-3">
+            <div class="pod-header">
+              <span class="pod-status-dot green"></span>
+              <span class="pod-title" id="pod-name-3">calculator-pod-3</span>
+            </div>
+            <div class="pod-body">
+              <p><strong>Host Node:</strong> <span id="pod-node-3" class="mono">node-01</span></p>
+              <p><strong>Pod IP:</strong> <span id="pod-ip-3" class="mono">10.244.0.7</span></p>
+              <p><strong>Status:</strong> <span class="badge badge-success">Running</span></p>
+            </div>
+            <div class="pod-traffic-indicator" id="pod-traffic-3">Last Served</div>
+          </div>
+        </div>
+
+        <!-- Serving Pod Banner -->
+        <div class="serving-pod-banner" id="serving-pod-banner">
+          <span class="pulse-icon">📡</span>
+          <div class="banner-text">
+            <strong>Serving Pod:</strong> <span id="serving-pod-name" class="highlight-pod">calculator-pod-1</span>
+            <span class="meta-tag" id="serving-pod-details">Node: node-01 | IP: 10.244.0.5</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- System Telemetry & Cluster Health -->
       <section class="card info-card">
-        <h2>Pipeline Verification & Health</h2>
+        <h2>Cluster Telemetry & Health</h2>
         <div class="metrics-grid">
           <div class="metric">
-            <span class="metric-val">100%</span>
-            <span class="metric-lbl">Test Pass Rate</span>
+            <span class="metric-val" id="metric-replicas">3 / 3</span>
+            <span class="metric-lbl">Active Replicas</span>
           </div>
           <div class="metric">
-            <span class="metric-val">8 / 8</span>
-            <span class="metric-lbl">Unit Tests</span>
+            <span class="metric-val" id="metric-memory">18 MB</span>
+            <span class="metric-lbl">Heap Memory</span>
           </div>
           <div class="metric">
-            <span class="metric-val">Zero</span>
-            <span class="metric-lbl">External Deps</span>
+            <span class="metric-val" id="metric-uptime">100%</span>
+            <span class="metric-lbl">Liveness Probes</span>
           </div>
         </div>
       </section>
     </main>
 
     <footer class="app-footer">
-      <p>CI/CD Demo Project • Deployed via GitHub Actions Continuous Delivery</p>
+      <p>CEME-DC-SE • Kubernetes & Docker CI/CD Microservice Demo</p>
     </footer>
   </div>
 
-  <script src="math.js"></script>
+  <script src="src/math.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
