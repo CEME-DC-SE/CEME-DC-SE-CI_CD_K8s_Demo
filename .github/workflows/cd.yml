@@ -100,13 +100,37 @@ jobs:
         if: env.KUBECONFIG != ''
         run: |
           mkdir -p ~/.kube
-          CLEANED_CONFIG=$(echo "$RAW_KUBECONFIG" | sed -e 's/^["'\'']//' -e 's/["'\'']$//')
-          if echo "$CLEANED_CONFIG" | base64 -d >/dev/null 2>&1 && ! echo "$CLEANED_CONFIG" | head -n 1 | grep -q "apiVersion"; then
-            echo "$CLEANED_CONFIG" | base64 -d > ~/.kube/config
-          else
-            echo "$CLEANED_CONFIG" > ~/.kube/config
-          fi
-          chmod 600 ~/.kube/config
+          python3 -c '
+          import os, sys, base64, json
+
+          raw = os.environ.get("RAW_KUBECONFIG", "").strip()
+          if not raw:
+              sys.exit(0)
+
+          if (raw.startswith("\"") and raw.endswith("\"")) or (raw.startswith("'") and raw.endswith("'")):
+              raw = raw[1:-1].strip()
+
+          try:
+              decoded = base64.b64decode(raw).decode("utf-8")
+              if "apiVersion" in decoded or "kind" in decoded:
+                  raw = decoded
+          except Exception:
+              pass
+
+          if raw.startswith("\"") or raw.startswith("{"):
+              try:
+                  parsed = json.loads(raw)
+                  if isinstance(parsed, str):
+                      raw = parsed
+              except Exception:
+                  pass
+
+          kubeconfig_path = os.path.expanduser("~/.kube/config")
+          with open(kubeconfig_path, "w") as f:
+              f.write(raw + "\n")
+
+          os.chmod(kubeconfig_path, 0o600)
+          '
           echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
         env:
           RAW_KUBECONFIG: ${{ secrets.KUBECONFIG }}
