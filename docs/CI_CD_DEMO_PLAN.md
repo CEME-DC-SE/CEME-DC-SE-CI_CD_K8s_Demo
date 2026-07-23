@@ -16,15 +16,14 @@ graph TD
     Push([Push to main Branch]) --> CI[CI Pipeline: Build, Test & Lint]
     CI --> CD[CD Pipeline: Continuous Delivery]
     
-    subgraph "CD Pipeline Execution"
-        CD --> Stage1[Stage 1: Standalone Docker Deployment]
-        CD --> Pages[Automated Live URL Deployment: GitHub Pages]
-        
+    subgraph "Sequential CD Pipeline Execution"
+        CD --> Stage0[Stage 0: GitHub Pages Deployment]
+        Stage0 --> Stage1[Stage 1: Standalone Docker Deployment]
         Stage1 --> Stage2[Stage 2: KinD Kubernetes Microservice]
         Stage2 --> Stage3[Stage 3: Kubernetes Telemetry Dashboard]
     end
 
-    Pages --> GUI["GitHub Web UI: 'View Deployment' Live Button"]
+    Stage0 --> GUI["GitHub Web UI: 'View Deployment' Live Button"]
 ```
 
 ---
@@ -38,6 +37,10 @@ graph TD
 - **Docker Validation**: Builds local container image `ceme-calculator-demo:${sha}` and verifies container API endpoint.
 
 ### 2. Automated CD Pipeline (`.github/workflows/cd.yml`)
+- **Stage 0: Automated Live URL Deployment (`build-and-package-site` & `deploy-production`)**
+  - Packages and deploys web portal static assets to GitHub Pages.
+  - Exposes the **live public URL** (`environment.url`) directly in the GitHub Actions web interface as a clickable **"View deployment"** button next to the workflow run box.
+
 - **Stage 1: Standalone Docker Deployment (Port 3000)**
   - Authenticates with GitHub Container Registry (`ghcr.io`).
   - Builds and pushes tagged Docker images (`latest` and `${sha}`).
@@ -56,16 +59,12 @@ graph TD
   - Exposes `kubectl proxy` on port 46723 and dumps cluster resources to `telemetry_output/`.
   - Uploads `k8s-telemetry-report` artifact for student review.
 
-- **Automated Live URL Deployment (`deploy-production` job)**
-  - Packages and deploys web portal static assets.
-  - Exposes the **live public URL** (`environment.url`) directly in the GitHub Actions web interface as a clickable **"View deployment"** button next to the workflow run box.
-
 ---
 
 ## 🎓 Student Demonstration Flow (Zero Manual Work)
 
 1. **Trigger**: Instructor or student pushes code to `main` (or clicks *Run workflow* in GitHub Actions GUI).
-2. **Autonomous Execution**: CI and CD pipelines run without human intervention.
+2. **Autonomous Sequential Execution**: CI and CD pipelines run without human intervention, completing Stage 0 (GitHub Pages) -> Stage 1 (Docker) -> Stage 2 (KinD Kubernetes) -> Stage 3 (Telemetry & Dashboard) in strict sequence.
 3. **GUI Verification**: Students navigate to the **Actions** tab on GitHub:
    - Click the active workflow run.
    - Click the green **"View deployment"** button rendered directly in the GitHub GUI to open the live web application.

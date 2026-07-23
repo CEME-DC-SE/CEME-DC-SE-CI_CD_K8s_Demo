@@ -23,10 +23,48 @@ concurrency:
 
 jobs:
   # ==========================================
+  # STAGE 0: GitHub Pages Deployment (Automated Live Public URL in GUI)
+  # ==========================================
+  build-and-package-site:
+    name: Build & Package Site
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Upload GitHub Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy-production:
+    name: Deploy to GitHub Pages (Live Automated Web App)
+    needs: build-and-package-site
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Output Stage 0 Endpoint Summary
+        run: |
+          echo "======================================================="
+          echo "🌐 STAGE 0 DEPLOYMENT ENDPOINT:"
+          echo "Live Web App URL: ${{ steps.deployment.outputs.page_url }}"
+          echo "======================================================="
+          echo "### 🌐 Stage 0 Live GitHub Pages Endpoint" >> $GITHUB_STEP_SUMMARY
+          echo "- **Live Web App URL**: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================
   # STAGE 1: Standalone Docker Deployment (:3000)
   # ==========================================
   cd-1-docker-deployment:
     name: "Stage 1: Standalone Docker Deployment (Port 3000)"
+    needs: deploy-production # Sequential dependency: Stage 1 runs after GitHub Pages deployment finishes successfully
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
@@ -71,40 +109,17 @@ jobs:
           curl -f http://127.0.0.1:3000/
           curl -f http://127.0.0.1:3000/api/cluster/info
 
-      # Step 7: Output endpoint URL to GitHub Actions Job Summary
+      # Step 7: Output endpoint URL to GitHub Actions Job Summary and Console Logs
       - name: Output Stage 1 Endpoint Summary
         run: |
+          echo "======================================================="
+          echo "🚀 STAGE 1 DEPLOYMENT ENDPOINTS:"
+          echo "Standalone Docker URL: http://127.0.0.1:3000/"
+          echo "API Cluster Info Endpoint: http://127.0.0.1:3000/api/cluster/info"
+          echo "======================================================="
           echo "### 🚀 Stage 1 Deployment Endpoint" >> $GITHUB_STEP_SUMMARY
           echo "- **Standalone Docker Container URL**: \`http://127.0.0.1:3000/\`" >> $GITHUB_STEP_SUMMARY
           echo "- **API Cluster Info Endpoint**: \`http://127.0.0.1:3000/api/cluster/info\`" >> $GITHUB_STEP_SUMMARY
-
-  # ==========================================
-  # GitHub Pages Deployment (Automated Live Public URL in GUI)
-  # ==========================================
-  build-and-package-site:
-    name: Build & Package Site
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Upload GitHub Pages Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: public
-
-  deploy-production:
-    name: Deploy to GitHub Pages (Live Automated Web App)
-    needs: build-and-package-site
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
 
   # ==========================================
   # STAGE 2: KinD Kubernetes Deployment (:8080)
@@ -166,9 +181,14 @@ jobs:
           curl -f http://127.0.0.1:8080/
           curl -f http://127.0.0.1:8080/api/cluster/info
 
-      # Step 9: Output endpoint URL to GitHub Actions Job Summary
+      # Step 9: Output endpoint URL to GitHub Actions Job Summary and Console Logs
       - name: Output Stage 2 Endpoint Summary
         run: |
+          echo "======================================================="
+          echo "☸️ STAGE 2 DEPLOYMENT ENDPOINTS:"
+          echo "KinD Microservice Service URL: http://127.0.0.1:8080/"
+          echo "K8s Microservice API Endpoint: http://127.0.0.1:8080/api/cluster/info"
+          echo "======================================================="
           echo "### ☸️ Stage 2 Deployment Endpoint" >> $GITHUB_STEP_SUMMARY
           echo "- **KinD Microservice Service URL**: \`http://127.0.0.1:8080/\`" >> $GITHUB_STEP_SUMMARY
           echo "- **K8s Microservice API Endpoint**: \`http://127.0.0.1:8080/api/cluster/info\`" >> $GITHUB_STEP_SUMMARY
@@ -219,8 +239,12 @@ jobs:
           name: k8s-telemetry-report
           path: telemetry_output/
 
-      # Step 7: Output dashboard endpoint URL to GitHub Actions Job Summary
+      # Step 7: Output dashboard endpoint URL to GitHub Actions Job Summary and Console Logs
       - name: Output Stage 3 Telemetry Summary
         run: |
+          echo "======================================================="
+          echo "📊 STAGE 3 DEPLOYMENT ENDPOINT:"
+          echo "Telemetry Dashboard URL: http://127.0.0.1:46723/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/#/workloads?namespace=ci-cd-demo"
+          echo "======================================================="
           echo "### 📊 Stage 3 Kubernetes Dashboard Endpoint" >> $GITHUB_STEP_SUMMARY
           echo "- **Telemetry Dashboard URL**: \`http://127.0.0.1:46723/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/#/workloads?namespace=ci-cd-demo\`" >> $GITHUB_STEP_SUMMARY
