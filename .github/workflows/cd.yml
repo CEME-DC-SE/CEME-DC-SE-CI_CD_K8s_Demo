@@ -69,6 +69,13 @@ jobs:
           curl -f http://127.0.0.1:3000/
           curl -f http://127.0.0.1:3000/api/cluster/info
 
+      # Step 7: Output endpoint URL to GitHub Actions Job Summary
+      - name: Output Stage 1 Endpoint Summary
+        run: |
+          echo "### 🚀 Stage 1 Deployment Endpoint" >> $GITHUB_STEP_SUMMARY
+          echo "- **Standalone Docker Container URL**: \`http://127.0.0.1:3000/\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **API Cluster Info Endpoint**: \`http://127.0.0.1:3000/api/cluster/info\`" >> $GITHUB_STEP_SUMMARY
+
   # ==========================================
   # STAGE 2: KinD Kubernetes Deployment (:8080)
   # ==========================================
@@ -101,13 +108,13 @@ jobs:
           cluster_name: ci-cd-demo-cluster
           wait: 120s
 
-      # Step 4: Pull the application Docker image from ghcr.io and import/load it directly into the KinD cluster node
+      # Step 5: Pull the application Docker image from ghcr.io and import/load it directly into the KinD cluster node
       - name: Pull and Load Docker Image into KinD Cluster
         run: |
           docker pull ghcr.io/${{ steps.repo.outputs.repo }}:latest
           kind load docker-image ghcr.io/${{ steps.repo.outputs.repo }}:latest --name ci-cd-demo-cluster
 
-      # Step 5: Apply all Kubernetes declarative YAML manifests (Namespace, Deployment, Service, Ingress) onto the cluster
+      # Step 6: Apply all Kubernetes declarative YAML manifests (Namespace, Deployment, Service, Ingress) onto the cluster
       - name: Apply Kubernetes Manifests
         run: |
           kubectl apply -f k8s/namespace.yaml
@@ -115,19 +122,26 @@ jobs:
           kubectl apply -f k8s/service.yaml
           kubectl apply -f k8s/ingress.yaml
 
-      # Step 6: Wait for all application pods to reach Running status and display active cluster resources
+      # Step 7: Wait for all application pods to reach Running status and display active cluster resources
       - name: Verify Kubernetes Rollout Status
         run: |
           kubectl rollout status deployment/calculator-deployment -n ci-cd-demo --timeout=120s
           kubectl get pods,svc,ingress -n ci-cd-demo -o wide
 
-      # Step 7: Expose the Kubernetes service locally via port-forwarding on port 8080 and verify the microservice endpoint
+      # Step 8: Forward Kubernetes Service to Port 8080 & Test Microservice
       - name: Forward Kubernetes Service to Port 8080 & Test Microservice
         run: |
           kubectl port-forward svc/calculator-service 8080:80 -n ci-cd-demo &
           sleep 5
           curl -f http://127.0.0.1:8080/
           curl -f http://127.0.0.1:8080/api/cluster/info
+
+      # Step 9: Output endpoint URL to GitHub Actions Job Summary
+      - name: Output Stage 2 Endpoint Summary
+        run: |
+          echo "### ☸️ Stage 2 Deployment Endpoint" >> $GITHUB_STEP_SUMMARY
+          echo "- **KinD Microservice Service URL**: \`http://127.0.0.1:8080/\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **K8s Microservice API Endpoint**: \`http://127.0.0.1:8080/api/cluster/info\`" >> $GITHUB_STEP_SUMMARY
 
   # ==========================================
   # STAGE 3: Kubernetes Telemetry & Dashboard (:46723)
@@ -174,3 +188,9 @@ jobs:
         with:
           name: k8s-telemetry-report
           path: telemetry_output/
+
+      # Step 7: Output dashboard endpoint URL to GitHub Actions Job Summary
+      - name: Output Stage 3 Telemetry Summary
+        run: |
+          echo "### 📊 Stage 3 Kubernetes Dashboard Endpoint" >> $GITHUB_STEP_SUMMARY
+          echo "- **Telemetry Dashboard URL**: \`http://127.0.0.1:46723/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/#/workloads?namespace=ci-cd-demo\`" >> $GITHUB_STEP_SUMMARY
