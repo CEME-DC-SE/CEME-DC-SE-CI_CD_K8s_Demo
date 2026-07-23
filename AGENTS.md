@@ -13,6 +13,7 @@ Follow these instructions during autonomous or semi-autonomous execution:
 - Keep code simple, modular, and cleanly documented.
 - Use vanilla JavaScript (Node.js ES modules or CommonJS as structured in the project).
 - Write new unit tests in the `test/` directory using Node.js's native test runner (`node --test`) for any new features introduced.
+- **Minimalist Educational Footprint**: Maintain a clean structure for student tutorials. Do not generate or commit unnecessary IDE/editor configuration directories (such as `.vscode/`), scratch files, or unneeded boilerplate.
 
 ## 3. Dependency Management
 - Avoid adding third-party dependencies unless explicitly requested by the user. Keep the footprint lightweight.

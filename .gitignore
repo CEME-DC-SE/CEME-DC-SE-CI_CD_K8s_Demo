@@ -9,3 +9,6 @@ yarn-error.log*
 
 # Antigravity CLI local credentials and artifacts
 .gemini/
+
+# IDE and Editor settings
+.vscode/
