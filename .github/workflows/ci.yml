@@ -14,11 +14,11 @@ jobs:
     steps:
       # Checkout the repository code to the runner
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       # Set up Node.js environment with version 24
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 24
 
@@ -34,6 +34,18 @@ jobs:
       - name: Run Tests
         run: npm test
 
+      # Build Docker Container Image
+      - name: Build Docker Image
+        run: docker build -t ceme-calculator-demo:${{ github.sha }} .
+
+      # Test Docker Container Execution & Telemetry Endpoint
+      - name: Test Docker Container Startup
+        run: |
+          docker run -d --name test-app -p 3000:3000 ceme-calculator-demo:${{ github.sha }}
+          sleep 3
+          curl -f http://localhost:3000/api/cluster/info || exit 1
+          docker stop test-app && docker rm test-app
+
   antigravity-audit:
     name: Antigravity Code Audit
     needs: build-and-test
@@ -46,7 +58,7 @@ jobs:
     steps:
       # Checkout the repository code to the runner
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref || github.ref }}
 
@@ -100,9 +112,9 @@ jobs:
       # Upload the generated report file as a GitHub Actions build artifact
       - name: Upload Audit Report
         if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
+          name: audit-report
           path: audit_report.md
-          archive: false
 
 
