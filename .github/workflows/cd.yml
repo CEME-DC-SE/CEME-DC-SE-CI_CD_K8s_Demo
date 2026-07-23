@@ -67,9 +67,6 @@ jobs:
     needs: deploy-production # Sequential dependency: Stage 1 runs after GitHub Pages deployment finishes successfully
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    environment:
-      name: stage-1-docker
-      url: http://127.0.0.1:3000/
     steps:
       # Step 1: Clone the repository source code onto the GitHub runner VM
       - name: Checkout Code
@@ -131,9 +128,6 @@ jobs:
     name: "Stage 2: KinD Kubernetes Microservice Deployment (Port 8080)"
     needs: cd-1-docker-deployment # Sequential dependency: Stage 2 runs only after Stage 1 finishes successfully
     runs-on: ubuntu-latest
-    environment:
-      name: stage-2-kubernetes
-      url: http://127.0.0.1:8080/
     steps:
       # Step 1: Clone repository source code on the new runner VM to access Kubernetes manifest files in k8s/
       - name: Checkout Code
@@ -206,9 +200,6 @@ jobs:
     name: "Stage 3: Kubernetes Telemetry & Dashboard (Port 46723)"
     needs: cd-2-kind-deployment # Sequential dependency: Stage 3 runs after Stage 2 finishes successfully
     runs-on: ubuntu-latest
-    environment:
-      name: stage-3-telemetry
-      url: http://127.0.0.1:46723/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/#/workloads?namespace=ci-cd-demo
     steps:
       # Step 1: Clone repository source code onto the new runner VM
       - name: Checkout Code
