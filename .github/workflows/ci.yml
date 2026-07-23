@@ -20,7 +20,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: '24'
 
       # Install npm packages defined in package.json
       - name: Install Dependencies
@@ -65,7 +65,7 @@ jobs:
 
       # Download, install, and add the Antigravity CLI ('agy') to the runner's PATH
       - name: Install Antigravity CLI
-        if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
+        if: env.ANTIGRAVITY_TOKEN != ''
         run: |
           # Fetch and execute the official installation script
           curl -fsSL https://antigravity.google/cli/install.sh | bash
@@ -74,7 +74,7 @@ jobs:
 
       # Setup local credential file for the CLI using the repository secret
       - name: Configure Credentials
-        if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
+        if: env.ANTIGRAVITY_TOKEN != ''
         run: |
           mkdir -p $HOME/.gemini/antigravity-cli
           printf '{"token":{"access_token":"","token_type":"Bearer","refresh_token":"%s","expiry":"0001-01-01T00:00:00Z"},"auth_method":"consumer"}\n' "$ANTIGRAVITY_TOKEN" > $HOME/.gemini/antigravity-cli/antigravity-oauth-token
@@ -83,7 +83,7 @@ jobs:
 
       # Run a headless AI audit using the 'agy' CLI and save it to audit_report.md
       - name: Run Automated Audit
-        if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
+        if: env.ANTIGRAVITY_TOKEN != ''
         run: |
           # Initialize the markdown file with a header
           echo "### Antigravity AI Code Audit Report" > audit_report.md
@@ -97,7 +97,7 @@ jobs:
 
       # Commit and push the generated audit report back to the repository
       - name: Commit and Push Audit Report
-        if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
+        if: env.ANTIGRAVITY_TOKEN != ''
         env:
           TARGET_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: |
@@ -111,7 +111,7 @@ jobs:
 
       # Upload the generated report file as a GitHub Actions build artifact
       - name: Upload Audit Report
-        if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
+        if: env.ANTIGRAVITY_TOKEN != ''
         uses: actions/upload-artifact@v4
         with:
           name: audit-report
