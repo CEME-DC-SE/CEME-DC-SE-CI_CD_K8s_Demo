@@ -86,7 +86,15 @@ jobs:
         id: repo
         run: echo "repo=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
 
-      # Step 3: Spin up a local ephemeral Kubernetes-in-Docker (KinD) cluster named 'ci-cd-demo-cluster'
+      # Step 3: Authenticate with GitHub Container Registry (ghcr.io) on this fresh VM runner
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 4: Spin up a local ephemeral Kubernetes-in-Docker (KinD) cluster named 'ci-cd-demo-cluster'
       - name: Create Ephemeral KinD Kubernetes Cluster
         uses: helm/kind-action@v1.12.0
         with:
