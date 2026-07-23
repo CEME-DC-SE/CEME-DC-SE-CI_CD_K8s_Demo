@@ -96,12 +96,20 @@ jobs:
         if: env.KUBECONFIG != ''
         uses: actions/checkout@v4
 
-      - name: Set Kubernetes Context
+      - name: Setup & Normalize Kubernetes Kubeconfig
         if: env.KUBECONFIG != ''
-        uses: azure/k8s-set-context@v4
-        with:
-          method: kubeconfig
-          kubeconfig: ${{ secrets.KUBECONFIG }}
+        run: |
+          mkdir -p ~/.kube
+          CLEANED_CONFIG=$(echo "$RAW_KUBECONFIG" | sed -e 's/^["'\'']//' -e 's/["'\'']$//')
+          if echo "$CLEANED_CONFIG" | base64 -d >/dev/null 2>&1 && ! echo "$CLEANED_CONFIG" | head -n 1 | grep -q "apiVersion"; then
+            echo "$CLEANED_CONFIG" | base64 -d > ~/.kube/config
+          else
+            echo "$CLEANED_CONFIG" > ~/.kube/config
+          fi
+          chmod 600 ~/.kube/config
+          echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
+        env:
+          RAW_KUBECONFIG: ${{ secrets.KUBECONFIG }}
 
       - name: Deploy Kubernetes Manifests
         if: env.KUBECONFIG != ''
