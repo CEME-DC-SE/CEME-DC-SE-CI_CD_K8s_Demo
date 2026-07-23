@@ -77,7 +77,11 @@ jobs:
         if: env.ANTIGRAVITY_TOKEN != ''
         run: |
           mkdir -p $HOME/.gemini/antigravity-cli
-          printf '{"token":{"access_token":"","token_type":"Bearer","refresh_token":"%s","expiry":"0001-01-01T00:00:00Z"},"auth_method":"consumer"}\n' "$ANTIGRAVITY_TOKEN" > $HOME/.gemini/antigravity-cli/antigravity-oauth-token
+          if [[ "$ANTIGRAVITY_TOKEN" =~ ^\{ ]]; then
+            printf '%s\n' "$ANTIGRAVITY_TOKEN" > $HOME/.gemini/antigravity-cli/antigravity-oauth-token
+          else
+            printf '{"token":{"access_token":"","token_type":"Bearer","refresh_token":"%s","expiry":"0001-01-01T00:00:00Z"},"auth_method":"consumer"}\n' "$ANTIGRAVITY_TOKEN" > $HOME/.gemini/antigravity-cli/antigravity-oauth-token
+          fi
           chmod 600 $HOME/.gemini/antigravity-cli/antigravity-oauth-token
 
 
