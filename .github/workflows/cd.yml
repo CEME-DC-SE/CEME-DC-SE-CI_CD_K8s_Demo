@@ -9,10 +9,12 @@ on:
       - completed
   workflow_dispatch:
 
-# Minimum GitHub token permissions required to read code and write container packages to GHCR
+# Minimum GitHub token permissions required to read code, write container packages, and publish to GitHub Pages
 permissions:
   contents: read
   packages: write
+  pages: write
+  id-token: write
 
 # Prevent simultaneous deployments by queuing concurrent pipeline runs under the "cd-pipeline" group
 concurrency:
@@ -75,6 +77,34 @@ jobs:
           echo "### 🚀 Stage 1 Deployment Endpoint" >> $GITHUB_STEP_SUMMARY
           echo "- **Standalone Docker Container URL**: \`http://127.0.0.1:3000/\`" >> $GITHUB_STEP_SUMMARY
           echo "- **API Cluster Info Endpoint**: \`http://127.0.0.1:3000/api/cluster/info\`" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================
+  # GitHub Pages Deployment (Automated Live Public URL in GUI)
+  # ==========================================
+  build-and-package-site:
+    name: Build & Package Site
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Upload GitHub Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy-production:
+    name: Deploy to GitHub Pages (Live Automated Web App)
+    needs: build-and-package-site
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   # ==========================================
   # STAGE 2: KinD Kubernetes Deployment (:8080)
