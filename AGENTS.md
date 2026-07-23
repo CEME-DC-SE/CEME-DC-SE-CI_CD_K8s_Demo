@@ -17,3 +17,13 @@ Follow these instructions during autonomous or semi-autonomous execution:
 
 ## 3. Dependency Management
 - Avoid adding third-party dependencies unless explicitly requested by the user. Keep the footprint lightweight.
+
+## 4. Target Deployment Endpoints & Objectives
+- **Local Standalone Docker Container**: Serves web app on `http://127.0.0.1:3000/`.
+- **Minikube Kubernetes Cluster Service**: Serves microservice on `http://127.0.0.1:8080/`.
+- **Kubernetes Telemetry Dashboard**: Accessible via Proxy at `http://127.0.0.1:46723/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/#/workloads?namespace=ci-cd-demo`.
+
+## 5. CI/CD & Secret Resilience
+- **Kubeconfig Normalization**: In GitHub Actions deployment workflows (`.github/workflows/cd.yml`), normalize `KUBECONFIG` secrets (strip outer quotes, decode Base64, and unescape JSON) before passing to `kubectl`.
+- **Graceful Fallback**: If `KUBECONFIG` is unconfigured or invalid, log a workflow notice (`::notice::`) and skip cluster deployment cleanly so CI/CD image build and site packaging finish with 100% success.
+

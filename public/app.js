@@ -13,6 +13,36 @@ document.addEventListener('DOMContentLoaded', () => {
   const metricMemory = document.getElementById('metric-memory');
   const metricUptime = document.getElementById('metric-uptime');
 
+  // Elements for dynamic environment detection
+  const clusterCard = document.querySelector('.cluster-card');
+  const pipelineStatus = document.getElementById('pipeline-status');
+  const bannerIcon = document.getElementById('banner-icon');
+  const bannerText = document.getElementById('banner-text');
+  const appSubtitle = document.getElementById('app-subtitle');
+  const calcCardDesc = document.getElementById('calc-card-desc');
+
+  let isK8sActive = false;
+
+  // Function to adapt UI depending on whether backend runs in K8s or Standalone Docker
+  function adaptEnvironmentUI(isK8s) {
+    isK8sActive = !!isK8s;
+    if (isK8sActive) {
+      if (clusterCard) clusterCard.style.display = 'block';
+      if (pipelineStatus) pipelineStatus.textContent = '☸️ K8s Cluster Healthy';
+      if (bannerIcon) bannerIcon.textContent = '🚀';
+      if (bannerText) bannerText.innerHTML = 'Live Kubernetes Deployment • Namespace: <code>ci-cd-demo</code> • Service: <code>ClusterIP:80</code>';
+      if (appSubtitle) appSubtitle.textContent = 'Kubernetes Load Balanced Microservice • Docker Containerized';
+      if (calcCardDesc) calcCardDesc.textContent = 'Calculations executed via Kubernetes Pod Load Balancers';
+    } else {
+      if (clusterCard) clusterCard.style.display = 'none';
+      if (pipelineStatus) pipelineStatus.textContent = '🐳 Docker Container 1/1 Healthy';
+      if (bannerIcon) bannerIcon.textContent = '🐳';
+      if (bannerText) bannerText.innerHTML = 'Standalone Docker Container Mode • Port: <code>3000</code>';
+      if (appSubtitle) appSubtitle.textContent = 'Standalone Docker Containerized Microservice';
+      if (calcCardDesc) calcCardDesc.textContent = 'Calculations executed via Node.js Express Math Engine';
+    }
+  }
+
   // Simulated Pod round-robin fallback list for static demo
   const mockPods = [
     { name: 'calculator-deployment-7f89d-p1', node: 'k8s-worker-node-01', ip: '10.244.0.5' },
@@ -23,12 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Function to highlight active serving Pod in Cluster Dashboard
   function highlightServingPod(podInfo) {
+    if (!isK8sActive || !podInfo) return;
+
     const pName = podInfo.podName || mockPods[mockIndex].name;
     const pNode = podInfo.nodeName || mockPods[mockIndex].node;
     const pIp = podInfo.podIp || mockPods[mockIndex].ip;
 
-    servingPodName.textContent = pName;
-    servingPodDetails.textContent = `Node: ${pNode} | IP: ${pIp}`;
+    if (servingPodName) servingPodName.textContent = pName;
+    if (servingPodDetails) servingPodDetails.textContent = `Node: ${pNode} | IP: ${pIp}`;
 
     // Map pod index (1, 2, or 3)
     let cardId = 1;
@@ -81,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const data = await response.json();
           resultVal.textContent = data.result;
           resultVal.style.color = '#3fb950';
+          adaptEnvironmentUI(data.isKubernetes);
           if (data.podInfo) {
             highlightServingPod(data.podInfo);
           }
@@ -98,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           resultVal.textContent = res;
           resultVal.style.color = '#3fb950';
-          highlightServingPod({});
+          adaptEnvironmentUI(false);
         }
       } catch (err) {
         // Fallback for static browser preview without backend server
@@ -119,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
           resultVal.textContent = `Error: ${e.message}`;
           resultVal.style.color = '#f85149';
         }
-        highlightServingPod({});
+        adaptEnvironmentUI(false);
       }
     });
   });
@@ -130,11 +163,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/cluster/info');
       if (res.ok) {
         const info = await res.json();
+        adaptEnvironmentUI(info.isKubernetes);
         if (metricMemory) metricMemory.textContent = `${info.memoryUsageMb} MB`;
         if (metricUptime) metricUptime.textContent = `${info.uptimeSeconds}s Uptime`;
       }
     } catch (e) {
-      // Ignore static fetch errors
+      adaptEnvironmentUI(false);
     }
   }
 

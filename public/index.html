@@ -13,28 +13,28 @@
   <div class="app-container">
     <header class="app-header">
       <div class="logo-container">
-        <span class="logo-icon">☸️</span>
+        <span class="logo-icon" id="logo-icon">☸️</span>
         <div>
-          <h1>K8s Web Calculator & Cluster Dashboard</h1>
-          <p class="subtitle">Kubernetes Load Balanced Microservice • Docker Containerized</p>
+          <h1 id="app-title">Web Calculator & Microservice</h1>
+          <p class="subtitle" id="app-subtitle">Kubernetes Load Balanced Microservice • Docker Containerized</p>
         </div>
       </div>
       <div class="status-badge">
         <span class="pulse-dot"></span>
-        <span id="pipeline-status">K8s Cluster 3/3 Healthy</span>
+        <span id="pipeline-status">Service Operational</span>
       </div>
     </header>
 
-    <div class="live-event-banner">
-      <span class="event-sparkle">🚀</span>
-      <span>Live Kubernetes Deployment • Namespace: <code>ci-cd-demo</code> • Service: <code>ClusterIP:80</code></span>
+    <div class="live-event-banner" id="live-event-banner">
+      <span class="event-sparkle" id="banner-icon">🚀</span>
+      <span id="banner-text">Live Kubernetes Deployment • Namespace: <code>ci-cd-demo</code> • Service: <code>ClusterIP:80</code></span>
     </div>
 
     <main class="main-content">
       <!-- Calculator Card -->
       <section class="card calculator-card">
         <h2>Interactive Math Utility Engine</h2>
-        <p class="card-desc">Calculations executed via Kubernetes Pod Load Balancer</p>
+        <p class="card-desc" id="calc-card-desc">Calculations executed via Node.js Express Engine</p>
         
         <div class="input-group">
           <div class="field">

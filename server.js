@@ -9,7 +9,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/src', express.static(path.join(__dirname, 'src')));
 
-// Calculate API endpoint returning calculation result + serving Kubernetes Pod telemetry
+// Calculate API endpoint returning calculation result + serving Kubernetes Pod telemetry when running in K8s
 app.post('/api/calculate', (req, res) => {
   const { op, a, b } = req.body;
   try {
@@ -20,16 +20,18 @@ app.post('/api/calculate', (req, res) => {
     }
 
     const result = MathLib[op](numA, numB);
+    const isKubernetes = !!process.env.POD_NAME;
     
     res.json({
       result,
-      podInfo: {
-        podName: process.env.POD_NAME || 'calculator-pod-local-1',
+      isKubernetes,
+      podInfo: isKubernetes ? {
+        podName: process.env.POD_NAME,
         podIp: process.env.POD_IP || '10.244.0.5',
         nodeName: process.env.NODE_NAME || 'k8s-node-01',
         namespace: process.env.POD_NAMESPACE || 'ci-cd-demo',
         timestamp: new Date().toISOString()
-      }
+      } : null
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -38,14 +40,15 @@ app.post('/api/calculate', (req, res) => {
 
 // Live Kubernetes Cluster info endpoint
 app.get('/api/cluster/info', (req, res) => {
+  const isKubernetes = !!process.env.POD_NAME;
   res.json({
-    podName: process.env.POD_NAME || 'calculator-pod-local-1',
-    podIp: process.env.POD_IP || '10.244.0.5',
-    nodeName: process.env.NODE_NAME || 'k8s-node-01',
-    namespace: process.env.POD_NAMESPACE || 'ci-cd-demo',
+    isKubernetes,
+    podName: isKubernetes ? process.env.POD_NAME : null,
+    podIp: isKubernetes ? process.env.POD_IP : null,
+    nodeName: isKubernetes ? process.env.NODE_NAME : null,
+    namespace: isKubernetes ? process.env.POD_NAMESPACE : null,
     uptimeSeconds: Math.floor(process.uptime()),
-    memoryUsageMb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-    isKubernetes: !!process.env.POD_NAME
+    memoryUsageMb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024)
   });
 });
 

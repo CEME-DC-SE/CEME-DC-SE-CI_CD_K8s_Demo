@@ -15,12 +15,15 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: "cd-pipeline"
   cancel-in-progress: false
 
 jobs:
-  build-and-push-docker:
-    name: Build & Push Docker Image to GHCR
+  # ==========================================
+  # STAGE 1: Standalone Docker Deployment (:3000)
+  # ==========================================
+  cd-1-docker-deployment:
+    name: "Stage 1: Standalone Docker Deployment (Port 3000)"
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
@@ -51,17 +54,21 @@ jobs:
             ghcr.io/${{ steps.repo.outputs.repo }}:latest
             ghcr.io/${{ steps.repo.outputs.repo }}:${{ github.sha }}
 
-      - name: Upload K8s Manifests Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: k8s-manifests
-          path: k8s/
+      - name: Run Standalone Docker Container locally on port 3000
+        run: |
+          docker run -d -p 3000:3000 --name standalone-calc ghcr.io/${{ steps.repo.outputs.repo }}:latest
+          sleep 3
+          docker ps
+          curl -f http://127.0.0.1:3000/
+          curl -f http://127.0.0.1:3000/api/cluster/info
 
+  # ==========================================
+  # GitHub Pages Deployment (Static Web Portal)
+  # ==========================================
   build-and-package-site:
     name: Build & Package Site
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -78,79 +85,38 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
 
-  deploy-kubernetes-cluster:
-    name: Deploy Microservice to Kubernetes Cluster
-    needs: build-and-push-docker
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+  # ==========================================
+  # STAGE 2: KinD Kubernetes Deployment (:8080)
+  # ==========================================
+  cd-2-kind-deployment:
+    name: "Stage 2: KinD Kubernetes Microservice Deployment (Port 8080)"
+    needs: cd-1-docker-deployment
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup & Normalize Kubernetes Kubeconfig
-        id: kubeconfig
+      - name: Lowercase Repository Name
+        id: repo
+        run: echo "repo=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
+      - name: Create Ephemeral KinD Kubernetes Cluster
+        uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: ci-cd-demo-cluster
+          wait: 120s
+
+      - name: Pull and Load Docker Image into KinD Cluster
         run: |
-          mkdir -p ~/.kube
-          python3 -c '
-          import os, sys, base64, json
+          docker pull ghcr.io/${{ steps.repo.outputs.repo }}:latest
+          kind load docker-image ghcr.io/${{ steps.repo.outputs.repo }}:latest --name ci-cd-demo-cluster
 
-          raw = os.environ.get("RAW_KUBECONFIG", "").strip()
-          github_output = os.environ.get("GITHUB_OUTPUT")
-
-          def write_output(key, val):
-              if github_output:
-                  with open(github_output, "a") as f:
-                      f.write(f"{key}={val}\n")
-
-          if not raw:
-              write_output("IS_VALID", "false")
-              print("::notice::No KUBECONFIG secret provided in repository secrets. Skipping Kubernetes deployment.")
-              sys.exit(0)
-
-          if (raw.startswith("\"") and raw.endswith("\"")) or (raw.startswith("'") and raw.endswith("'")):
-              raw = raw[1:-1].strip()
-
-          try:
-              decoded = base64.b64decode(raw).decode("utf-8")
-              if "apiVersion" in decoded or "kind" in decoded:
-                  raw = decoded
-          except Exception:
-              pass
-
-          if raw.startswith("\"") or raw.startswith("{"):
-              try:
-                  parsed = json.loads(raw)
-                  if isinstance(parsed, str):
-                      raw = parsed
-              except Exception:
-                  pass
-
-          if "apiVersion" not in raw or "clusters" not in raw:
-              write_output("IS_VALID", "false")
-              print("::notice::KUBECONFIG secret is missing valid apiVersion/clusters configuration. Skipping Kubernetes deployment.")
-              sys.exit(0)
-
-          kubeconfig_path = os.path.expanduser("~/.kube/config")
-          with open(kubeconfig_path, "w") as f:
-              f.write(raw + "\n")
-
-          os.chmod(kubeconfig_path, 0o600)
-          write_output("IS_VALID", "true")
-          '
-          if [ "${{ steps.kubeconfig.outputs.IS_VALID }}" = "true" ]; then
-            echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
-          fi
-        env:
-          RAW_KUBECONFIG: ${{ secrets.KUBECONFIG }}
-
-      - name: Deploy Kubernetes Manifests
-        if: steps.kubeconfig.outputs.IS_VALID == 'true'
+      - name: Apply Kubernetes Manifests
         run: |
           kubectl apply -f k8s/namespace.yaml
           kubectl apply -f k8s/deployment.yaml
@@ -158,8 +124,53 @@ jobs:
           kubectl apply -f k8s/ingress.yaml
 
       - name: Verify Kubernetes Rollout Status
-        if: steps.kubeconfig.outputs.IS_VALID == 'true'
         run: |
           kubectl rollout status deployment/calculator-deployment -n ci-cd-demo --timeout=120s
           kubectl get pods,svc,ingress -n ci-cd-demo -o wide
 
+      - name: Forward Kubernetes Service to Port 8080 & Test Microservice
+        run: |
+          kubectl port-forward svc/calculator-service 8080:80 -n ci-cd-demo &
+          sleep 5
+          curl -f http://127.0.0.1:8080/
+          curl -f http://127.0.0.1:8080/api/cluster/info
+
+  # ==========================================
+  # STAGE 3: Kubernetes Telemetry & Dashboard (:46723)
+  # ==========================================
+  cd-3-cluster-dashboard:
+    name: "Stage 3: Kubernetes Telemetry & Dashboard (Port 46723)"
+    needs: cd-2-kind-deployment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Create Ephemeral KinD Kubernetes Cluster for Telemetry
+        uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: ci-cd-demo-telemetry
+          wait: 120s
+
+      - name: Deploy Kubernetes Dashboard
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+          kubectl rollout status deployment/kubernetes-dashboard -n kubernetes-dashboard --timeout=120s || true
+
+      - name: Expose Kubernetes Dashboard Proxy on Port 46723
+        run: |
+          kubectl proxy --port=46723 &
+          sleep 3
+          curl -s http://127.0.0.1:46723/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/ || true
+
+      - name: Generate Telemetry Summary Artifact
+        run: |
+          mkdir -p telemetry_output
+          kubectl get all -A > telemetry_output/cluster_resources.txt
+          kubectl get nodes -o wide > telemetry_output/cluster_nodes.txt
+
+      - name: Upload Telemetry Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-telemetry-report
+          path: telemetry_output/
