@@ -48,6 +48,8 @@ jobs:
 
   antigravity-audit:
     name: Antigravity Code Audit
+    # Set to true (or remove if false) to re-enable Antigravity AI Code Audit
+    if: false
     needs: build-and-test
     runs-on: ubuntu-latest
     permissions:
